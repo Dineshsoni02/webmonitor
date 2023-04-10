@@ -4,4 +4,4 @@ function App() {
   return <div className="App"></div>;
 }
 
-export default
+export default App;
