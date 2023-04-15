@@ -4,11 +4,12 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config();
 const cron = require("node-cron");
+const axios = require("axios");
+const nodemailer = require("nodemailer");
+
 const UserRoutes = require("./app/User/UserRoutes");
 const WebsiteRoutes = require("./app/website/WebsiteRoutes");
 const WebsiteSchema = require("./app/website/WebsiteSchema");
-const axios = require("axios");
-const nodemailer = require("nodemailer");
 
 const app = express();
 app.use(cors());
@@ -29,6 +30,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.G_PASS,
   },
 });
+
 cron.schedule("0 */1 * * *", async () => {
   const allWebsites = await WebsiteSchema.find({}).populate({
     path: "userId",
@@ -57,7 +59,6 @@ cron.schedule("0 */1 * * *", async () => {
 
 app.listen(5000, () => {
   console.log("Server is up at 5000");
-
   mongoose
     .connect(process.env.MONGO_URI)
     .then(() => console.log("Connection to Database is successful"))
