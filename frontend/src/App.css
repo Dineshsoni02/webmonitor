@@ -116,7 +116,11 @@ button:active {
   flex-direction: column;
   gap: 20px;
 }
-
+.avail{
+  
+  font-size: 18px;
+color: #000000e0;
+}
 .card {
   padding: 10px;
   display: flex;

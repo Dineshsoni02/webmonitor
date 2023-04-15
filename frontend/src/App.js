@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import Auth from "./components/auth";
 
 function App() {
@@ -10,25 +10,60 @@ function App() {
   const [loadingWebsites, setLoadingWebsites] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [inputUrl, setInputUrl] = useState("");
+  const [websiteData, setWebsiteData] = useState([]);
 
   function validateUrl(value) {
     return /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:[/?#]\S*)?$/i.test(
       value
     );
   }
-
   const addWebsite = async () => {
+    const rawToken = localStorage.getItem("Token");
+    const tokens = JSON.parse(rawToken);
+    const accessToken = tokens.accessToken.token;
     if (!inputUrl.trim()) {
       setErrMsg("Enter URL");
       return;
     }
     if (!validateUrl(inputUrl)) {
-      setErrMsg("Enter Valid URL"); 
+      setErrMsg("Enter Valid URL");
       return;
     }
     setErrMsg("");
 
+    const res = await fetch("http://localhost:5000/website", {
+      method: "POST",
+      headers: {
+        Authorization: accessToken,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        url: inputUrl,
+      }),
+    }).catch((err) => void err);
+    const result = await res.json();
+    if (!result || !result.status) {
+      setErrMsg(result.message);
+    }
+    toast.success(result.message);
+    allWebsite();
+  };
+  const allWebsite = async () => {
+    const rawToken = localStorage.getItem("Token");
+    const tokens = JSON.parse(rawToken);
+    const accessToken = tokens.accessToken.token;
 
+    const res = await fetch("http://localhost:5000/website", {
+      method: "GET",
+      headers: {
+        Authorization: accessToken,
+      },
+    }).catch((err) => void err);
+    const result = await res.json();
+    if (!result || !result.status) {
+      setErrMsg(result.message);
+    }
+    setWebsiteData(result?.data);
   };
 
   const init = async () => {
@@ -41,8 +76,7 @@ function App() {
     const tokens = JSON.parse(rawToken);
     const accessToken = tokens.accessToken;
     const aExpiry = new Date(accessToken.expireAt);
-
-    if (new Date() < aExpiry) {
+    if (new Date() > aExpiry) {
       const res = await fetch("http://localhost:5000/user/new-token", {
         method: "POST",
         headers: {
@@ -77,6 +111,7 @@ function App() {
 
   useEffect(() => {
     init();
+    allWebsite();
   }, []);
 
   return (
@@ -110,22 +145,28 @@ function App() {
                 <p>LOADING...</p>
               ) : (
                 <div className={"cards"}>
-                  {[1, 1, 1, 1, 1, 1].map((item) => (
-                    <div className={"card"}>
-                      <div className="left">
-                        <p
-                          className={`link ${item.isActive ? "green" : "red"}`}
-                        >
-                          {item.isActive ? "ACTIVE" : "DOWN"}
-                        </p>
-                        <p className="url">{item.url}</p>
-                      </div>
+                  {websiteData.length ? (
+                    websiteData.map((item) => (
+                      <div className={"card"}>
+                        <div className="left">
+                          <p
+                            className={`link ${
+                              item.isActive ? "green" : "red"
+                            }`}
+                          >
+                            {item.isActive ? "ACTIVE" : "DOWN"}
+                          </p>
+                          <p className="url">{item.url}</p>
+                        </div>
 
-                      <div className="right">
-                        <p className="link red">delete</p>
+                        <div className="right">
+                          <p className="link red">delete</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="avail">No websites are added. Add some...</p>
+                  )}
                 </div>
               )}
             </div>
