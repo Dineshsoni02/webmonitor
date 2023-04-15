@@ -11,13 +11,16 @@ function App() {
   const [errMsg, setErrMsg] = useState("");
   const [inputUrl, setInputUrl] = useState("");
   const [websiteData, setWebsiteData] = useState([]);
-
+  const [delWeb, setDelWeb] = useState("");
+  const [addWeb, setAddWeb] = useState(false);
   function validateUrl(value) {
     return /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:[/?#]\S*)?$/i.test(
       value
     );
   }
+  //add websites to database
   const addWebsite = async () => {
+    if (addWeb) return;
     const rawToken = localStorage.getItem("Token");
     const tokens = JSON.parse(rawToken);
     const accessToken = tokens.accessToken.token;
@@ -30,7 +33,7 @@ function App() {
       return;
     }
     setErrMsg("");
-
+    setAddWeb(true);
     const res = await fetch("http://localhost:5000/website", {
       method: "POST",
       headers: {
@@ -41,6 +44,7 @@ function App() {
         url: inputUrl,
       }),
     }).catch((err) => void err);
+    setAddWeb(false);
     const result = await res.json();
     if (!result || !result.status) {
       setErrMsg(result.message);
@@ -48,24 +52,49 @@ function App() {
     toast.success(result.message);
     allWebsite();
   };
+  //fetch all websites from database
   const allWebsite = async () => {
+    if (loadingWebsites) return;
     const rawToken = localStorage.getItem("Token");
     const tokens = JSON.parse(rawToken);
     const accessToken = tokens.accessToken.token;
-
+    setLoadingWebsites(true);
     const res = await fetch("http://localhost:5000/website", {
       method: "GET",
       headers: {
         Authorization: accessToken,
       },
     }).catch((err) => void err);
+    setLoadingWebsites(false);
     const result = await res.json();
     if (!result || !result.status) {
       setErrMsg(result.message);
     }
     setWebsiteData(result?.data);
   };
+  //deletes websites from database
 
+  const handleDelete = async (id) => {
+    if (delWeb) return;
+    const rawToken = localStorage.getItem("Token");
+    const tokens = JSON.parse(rawToken);
+    const accessToken = tokens.accessToken.token;
+    setDelWeb(id);
+    const res = await fetch(`http://localhost:5000/website/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: accessToken,
+      },
+    }).catch((err) => void err);
+    const result = await res.json();
+    setDelWeb("");
+    if (!result || !result.status) {
+      setErrMsg(result.message);
+    }
+    toast.success(result.message);
+    allWebsite();
+  };
+  //init function for user validation
   const init = async () => {
     const rawToken = localStorage.getItem("Token");
     if (!rawToken) {
@@ -107,11 +136,11 @@ function App() {
       setPageLoaded(true);
       setShowAuth(false);
     }
+    allWebsite();
   };
 
   useEffect(() => {
     init();
-    allWebsite();
   }, []);
 
   return (
@@ -135,7 +164,9 @@ function App() {
                 />
               </div>
               {errMsg && <p className="error">{errMsg}</p>}
-              <button onClick={addWebsite}>Add</button>
+              <button onClick={addWebsite} disabled={addWeb}>
+                {addWeb ? "Adding..." : "Add"}
+              </button>
             </div>
 
             <div className="body">
@@ -144,10 +175,10 @@ function App() {
               {loadingWebsites ? (
                 <p>LOADING...</p>
               ) : (
-                <div className={"cards"}>
+                <div className="cards">
                   {websiteData.length ? (
                     websiteData.map((item) => (
-                      <div className={"card"}>
+                      <div className="card" key={item._id}>
                         <div className="left">
                           <p
                             className={`link ${
@@ -160,12 +191,19 @@ function App() {
                         </div>
 
                         <div className="right">
-                          <p className="link red">delete</p>
+                          <p
+                            className="link red"
+                            onClick={() => handleDelete(item._id)}
+                          >
+                            {delWeb == item._id ? "Deleting..." : "Delete"}
+                          </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="avail">No websites are added. Add some...</p>
+                    <p className="avail">
+                      No websites are added. Add some websites...
+                    </p>
                   )}
                 </div>
               )}
