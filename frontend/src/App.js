@@ -7,7 +7,21 @@ import Auth from "./components/auth";
 function App() {
   const [pageLoaded, setPageLoaded] = useState(false);
   const [showAuth, setShowAuth] = useState(true);
+  const [loadingWebsites, setLoadingWebsites] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
 
+
+
+
+
+
+
+
+
+
+
+
+  
   const init = async () => {
     const rawToken = localStorage.getItem("Token");
     if (!rawToken) {
@@ -64,19 +78,45 @@ function App() {
         showAuth ? (
           <Auth />
         ) : (
-          <div className="main_div">
-            <div className="web_add">
-              <input type="text" placeholder="https://google.com" className="web_input"/>
+          <div className="inner-app">
+            <div className="app-header">
+              <p className="heading">Add Website for monitoring</p>
+              <div className="elem">
+                <label>Enter website URL</label>
+                <input
+                  type="text"
+                  placeholder="https://google.com"
+                  className="web_input"
+                />
+              </div>
               <button>Add</button>
             </div>
-            <div className="show_web">
-              {/* {[1, 1, 1, 1, 1].map((item) => { */}
-                <div className="web_card">
-                  <p className="status">Active</p>
-                  <div className="web_url">https://google.com</div>
-                  <p className="delete">delete</p>
-                </div>;
-              {/* })} */}
+
+            <div className="body">
+              <p className="heading">Your Websites</p>
+
+              {loadingWebsites ? (
+                <p>LOADING...</p>
+              ) : (
+                <div className={"cards"}>
+                  {[1, 1, 1, 1, 1, 1].map((item) => (
+                    <div className={"card"}>
+                      <div className="left">
+                        <p
+                          className={`link ${item.isActive ? "green" : "red"}`}
+                        >
+                          {item.isActive ? "ACTIVE" : "DOWN"}
+                        </p>
+                        <p className="url">{item.url}</p>
+                      </div>
+
+                      <div className="right">
+                        <p className="link red">delete</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )

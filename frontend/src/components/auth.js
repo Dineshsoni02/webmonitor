@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 const Auth = () => {
   const [isSignUpActive, setIsSignUpActive] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [btnDisable, setBtnDisable] = useState(false);
+
   const [inputVal, setInputVal] = useState({
     name: "",
     email: "",
@@ -20,6 +22,8 @@ const Auth = () => {
   };
 
   const handleSignUp = async () => {
+    if (btnDisable) return;
+
     if (!inputVal?.name.trim() || !inputVal?.email.trim() || !inputVal.pass) {
       setErrorMsg("All fields are required");
       return;
@@ -33,7 +37,7 @@ const Auth = () => {
       return;
     }
     setErrorMsg("");
-
+    setBtnDisable(true);
     const res = await fetch("http://localhost:5000/user/signup", {
       method: "POST",
       headers: {
@@ -45,6 +49,7 @@ const Auth = () => {
         password: inputVal.pass,
       }),
     }).catch((err) => setErrorMsg("Error in creating user" - err.message));
+    setBtnDisable(false);
     if (!res) {
       setErrorMsg("Error in creating user");
     }
@@ -54,14 +59,16 @@ const Auth = () => {
     }
     toast.success(result.data.name + result.message);
 
-    const tokens = result.data?.tokens;
-    localStorage.setItem("Token", JSON.stringify(tokens));
+    const sTokens = result.data?.tokens;
+    localStorage.setItem("Token", JSON.stringify(sTokens));
     setTimeout(() => {
       window.location.reload();
     }, 500);
-  };  
+  };
 
   const handleLogIn = async () => {
+    if (btnDisable) return;
+
     if (!inputVal?.email.trim() || !inputVal.pass) {
       setErrorMsg("All fields are required");
       return;
@@ -75,6 +82,7 @@ const Auth = () => {
       return;
     }
     setErrorMsg("");
+    setBtnDisable(true);
 
     const res = await fetch("http://localhost:5000/user/login", {
       method: "POST",
@@ -86,17 +94,20 @@ const Auth = () => {
         password: inputVal.pass,
       }),
     }).catch((err) => setErrorMsg("Error in logging of user" - err.message));
+    setBtnDisable(false);
+
     if (!res) {
       setErrorMsg("Error in Logging of user");
     }
     const result = await res.json();
-    if (!result) {
+
+    if (!result.status) {
       setErrorMsg(result.message);
     }
 
-    toast.success(result.data.name +" " + result.message);
-    const tokens = result.data?.tokens;
-    localStorage.setItem("Token", JSON.stringify(tokens));
+    toast.success(result.data.name + " " + result.message);
+    const lTokens = result.data?.tokens;
+    localStorage.setItem("Token", JSON.stringify(lTokens));
     setTimeout(() => {
       window.location.reload();
     }, 500);
@@ -143,7 +154,9 @@ const Auth = () => {
         />
       </div>
       {errorMsg && <p className="error">{errorMsg}</p>}
-      <button onClick={handleSignUp}>Sign Up</button>
+      <button onClick={handleSignUp} disabled={btnDisable}>
+        {btnDisable ? "Trying to SignUp..." : "Sign Up"}
+      </button>
       <div className="bottomText">
         Already a User ?{" "}
         <span onClick={() => setIsSignUpActive(false)}>Login</span> here
@@ -176,7 +189,11 @@ const Auth = () => {
           }
         />
       </div>
-      <button onClick={handleLogIn}>Login</button>
+      {errorMsg && <p className="error">{errorMsg}</p>}
+
+      <button onClick={handleLogIn} disabled={btnDisable}>
+        {btnDisable ? "Logging you..." : "Login"}
+      </button>
       <div className="bottomText">
         New here ? <span onClick={() => setIsSignUpActive(true)}>Sign Up</span>{" "}
         here
